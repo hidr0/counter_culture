@@ -8,4 +8,16 @@ class User < ActiveRecord::Base
 
   has_many :reviews
   accepts_nested_attributes_for :reviews, :allow_destroy => true
+
+  attr_reader :name_writes
+
+  def name=(name)
+    @name_writes ||= 0
+    @name_writes += 1
+    write_attribute(:name, name)
+  end
+
+  def clear_name_writes
+    @name_writes = 0
+  end
 end

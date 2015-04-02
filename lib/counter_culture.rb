@@ -346,7 +346,8 @@ module CounterCulture
       prev = self.dup
 
       self.changed_attributes.each_pair do |key, value|
-        prev.send("#{key}=".to_sym, value)
+        # []= is a public write_attribute alias
+        prev[key] = value
       end
 
       prev

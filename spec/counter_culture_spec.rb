@@ -1348,6 +1348,18 @@ describe "CounterCulture" do
       user.name.should =="Joe Smith"
       user.manages_company_id.should == 2
     end
+
+    it 'does not write to the model using setters' do
+      # Setters might be over-ridden.
+      user.clear_name_writes
+      user.name_writes.should == 0
+
+      user.name = 'Jane Smith'
+      prev = user.send(:previous_model)
+
+      user.name.should == 'Jane Smith'
+      prev.name_writes.should == 1
+    end
   end
 
   describe "self referential counter cache" do
