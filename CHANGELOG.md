@@ -1,3 +1,29 @@
+## 0.2.2 (July 11, 2016)
+
+Bugfixes:
+  - Use `ActiveSupport.on_load` for better Rails 5 compatibility (see [rails/rails#23589](https://github.com/rails/rails/issues/23589))
+
+## 0.2.1 (June 15, 2016)
+
+Improvements:
+  - Add [`:delta_magnitude` option](https://github.com/magnusvk/counter_culture#dynamic-delta-magnitude)
+
+## 0.2.0 (April 22, 2016)
+
+Improvments:
+  - Major refactor of the code that reduces ActiveRecord method pollution. Documented API is unchanged, but behind the scenes a lot has changed.
+  - Ability to configure batch size of `counter_culture_fix_size`
+
+## 0.1.34 (October 27, 2015)
+
+Bugfixes:
+  - Fixes an issue when using a default scope that adds a join in conjunction with counter_culture
+
+## 0.1.33 (April 2, 2015)
+
+Bugfixes:
+  - Fixes an issue with STI classes and inheritance
+
 ## 0.1.32 (March 16, 2015)
 
 Improvements:

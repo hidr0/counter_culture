@@ -41,8 +41,9 @@ ActiveRecord::Schema.define(:version => 20120522160158) do
 
   create_table "products", :force => true do |t|
     t.string   "name"
-    t.integer  "reviews_count",       :default => 0, :null => false
-    t.integer  "rexiews_count",       :default => 0, :null => false
+    t.integer  "reviews_count",               :default => 0, :null => false
+    t.integer  "simple_reviews_count",        :default => 0, :null => false
+    t.integer  "rexiews_count",               :default => 0, :null => false
     t.integer  "twitter_reviews_count",       :default => 0, :null => false
     t.integer  "category_id"
     t.datetime "created_at"
@@ -56,6 +57,7 @@ ActiveRecord::Schema.define(:version => 20120522160158) do
     t.integer  "product_id"
     t.integer  "approvals"
     t.float    "value"
+    t.boolean  "heavy",               :default => false, :null => false
     t.string   "type"
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -68,6 +70,8 @@ ActiveRecord::Schema.define(:version => 20120522160158) do
     t.integer  "reviews_count",       :default => 0, :null => false
     t.integer  "using_count",         :default => 0, :null => false
     t.integer  "tried_count",         :default => 0, :null => false
+    t.integer  "dynamic_delta_count",         :default => 0, :null => false
+    t.integer  "custom_delta_count",         :default => 0, :null => false
     t.integer  "review_approvals_count",      :default => 0, :null => false
     t.string   "has_string_id_id"
     t.float    "review_value_sum",    :default => 0.0, :null => false

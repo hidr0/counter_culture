@@ -13,10 +13,10 @@ Turbo-charged counter caches for your Rails app. Huge improvements over the Rail
 Add counter_culture to your Gemfile:
 
 ```ruby
-gem 'counter_culture', '~> 0.1.23'
+gem 'counter_culture', '~> 0.1.33'
 ```
 
-Then run ```bundle update ```
+Then run `bundle install`
 
 ## Database Schema
 
@@ -101,7 +101,7 @@ Now, the ```Category``` model will keep an up-to-date counter-cache in the ```pr
 ```ruby
 class Product < ActiveRecord::Base
   belongs_to :category
-  counter_culture :category, :column_name => Proc.new {|model| "#{model.product_type}_count" }
+  counter_culture :category, :column_name => proc {|model| "#{model.product_type}_count" }
   # attribute product_type may be one of ['awesome', 'sucky']
 end
 
@@ -110,14 +110,41 @@ class Category < ActiveRecord::Base
 end
 ```
 
-Now, the ```Category``` model will keep two up-to-date counter-caches in the ```awesome_count``` and ```sucky_count``` columns of the ```categories``` table. Products with type ```'awesome'``` will affect only the ```awesome_count```, while products with type ```'sucky'``` will affect only the ```sucky_count```. This will also work with multi-level counter caches.
+### Delta Magnitude
+
+```ruby
+class Product < ActiveRecord::Base
+  belongs_to :category
+  counter_culture :category, column_name: :weight, delta_magnitude: proc { model.product_type == 'awesome' ? 2 : 1 }
+end
+
+class Category < ActiveRecord::Base
+  has_many :products
+end
+```
+
+Now the `Category` model will keep the `weight` column up to date: `awesome` products will affect it by a magnitude of 2, others by a magnitude of 1.
+
+You can also use a static multiplier as the `delta_magnitude`:
+```ruby
+class Product < ActiveRecord::Base
+  belongs_to :category
+  counter_culture :category, column_name: :weight, delta_magnitude: 3
+end
+
+class Category < ActiveRecord::Base
+  has_many :products
+end
+```
+
+Now adding a `Product` will increase the `weight` column in its `Category` by 3; deleting it will decrease it by 3.
 
 ### Conditional counter cache
 
 ```ruby
 class Product < ActiveRecord::Base
   belongs_to :category
-  counter_culture :category, :column_name => Proc.new {|model| model.special? ? 'special_count' : nil }
+  counter_culture :category, :column_name => proc {|model| model.special? ? 'special_count' : nil }
 end
 
 class Category < ActiveRecord::Base
@@ -157,7 +184,7 @@ The ```:delta_column``` option supports all numeric column types, not just ```:i
 class Product < ActiveRecord::Base
   belongs_to :category
   counter_culture :category, :foreign_key_values => 
-      Proc.new {|category_id| [category_id, Category.find_by_id(category_id).try(:parent_category).try(:id)] }
+      proc {|category_id| [category_id, Category.find_by_id(category_id).try(:parent_category).try(:id)] }
 end
 
 class Category < ActiveRecord::Base
@@ -202,6 +229,17 @@ Product.counter_culture_fix_counts :only => [[:subcategory, :category]]
 # :except and :only also accept arrays
 ```
 
+The ```counter_culture_fix_counts``` counts method uses batch processing of records to keep the memory consumption low. The default batch size is 1000 but is configurable like so
+```ruby
+# In an initializer
+CounterCulture.config.batch_size = 100
+```
+or by passing the :batch_size option to the method call
+
+```ruby
+Product.counter_culture_fix_counts :batch_size => 100
+```
+
 ```counter_culture_fix_counts``` returns an array of hashes of all incorrect values for debugging purposes. The hashes have the following format:
 
 ```ruby
@@ -216,13 +254,13 @@ Product.counter_culture_fix_counts :only => [[:subcategory, :category]]
 
 #### Handling dynamic column names
 
-Manually populating counter caches with dynammic column names requires additional configuration:
+Manually populating counter caches with dynamic column names requires additional configuration:
 
 ```ruby
 class Product < ActiveRecord::Base
   belongs_to :category
   counter_culture :category, 
-      :column_name => Proc.new {|model| "#{model.product_type}_count" },
+      :column_name => proc {|model| "#{model.product_type}_count" },
       :column_names => {
           ["products.product_type = ?", 'awesome'] => 'awesome_count',
           ["products.product_type = ?", 'sucky'] => 'sucky_count'

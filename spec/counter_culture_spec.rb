@@ -4,6 +4,7 @@ require 'models/company'
 require 'models/industry'
 require 'models/product'
 require 'models/review'
+require 'models/simple_review'
 require 'models/twitter_review'
 require 'models/user'
 require 'models/category'
@@ -453,6 +454,27 @@ describe "CounterCulture" do
       user.using_count.should == 0
       user.tried_count.should == 0
     end
+
+    it "should decrement if changing column name to nil without errors using default scope" do
+      User.with_default_scope do
+        user.using_count.should == 0
+        user.tried_count.should == 0
+
+        review = Review.create :user_id => user.id, :product_id => product.id, :review_type => "using"
+        user.reload
+
+        user.using_count.should == 1
+        user.tried_count.should == 0
+
+        review.review_type = nil
+        review.save!
+
+        user.reload
+
+        user.using_count.should == 0
+        user.tried_count.should == 0
+      end
+    end
   end
 
   it "increments third-level counter cache on create" do
@@ -639,6 +661,66 @@ describe "CounterCulture" do
     industry1.rexiews_count.should == 0
     industry2.reload
     industry2.rexiews_count.should == 1
+  end
+
+  it "correctly handles dynamic delta magnitude" do
+    user = User.create
+    product = Product.create
+
+    review_heavy = Review.create(
+      :user_id => user.id,
+      :review_type => 'using',
+      :product_id => product.id,
+      :heavy => true,
+    )
+    user.reload
+    user.dynamic_delta_count.should == 2
+
+    review_light = Review.create(
+      :user_id => user.id,
+      :product_id => product.id,
+      :review_type => 'using',
+      :heavy => false,
+    )
+    user.reload
+    user.dynamic_delta_count.should == 3
+
+    review_heavy.destroy
+    user.reload
+    user.dynamic_delta_count.should == 1
+
+    review_light.destroy
+    user.reload
+    user.dynamic_delta_count.should == 0
+  end
+
+  it "correctly handles non-dynamic custom delta magnitude" do
+    user = User.create
+    product = Product.create
+
+    review1 = Review.create(
+      :user_id => user.id,
+      :review_type => 'using',
+      :product_id => product.id
+    )
+    user.reload
+    user.custom_delta_count.should == 3
+
+    review2 = Review.create(
+      :user_id => user.id,
+      :review_type => 'using',
+      :product_id => product.id
+    )
+    user.reload
+    user.custom_delta_count.should == 6
+
+    review1.destroy
+    user.reload
+    user.custom_delta_count.should == 3
+
+    review2.destroy
+    user.reload
+    user.custom_delta_count.should == 0
   end
 
   it "increments dynamic counter cache on create" do
@@ -936,13 +1018,28 @@ describe "CounterCulture" do
     company.save!
     product.save!
 
-    TwitterReview.counter_culture_fix_counts
+    TwitterReview.counter_culture_fix_counts :skip_unsupported => true
 
     company.reload
     product.reload
 
     company.twitter_reviews_count.should == 1
     product.twitter_reviews_count.should == 1
+  end
+
+  it "handles an inherited STI counter cache correctly" do
+    company = Company.create
+    user = User.create :manages_company_id => company.id
+    product = Product.create
+    SimpleReview.create :user_id => user.id, :product_id => product.id
+    product.reload
+    product.reviews_count.should == 1
+    product.simple_reviews_count.should == 1
+
+    Review.create :user_id => user.id, :product_id => product.id
+    product.reload
+    product.reviews_count.should == 2
+    product.simple_reviews_count.should == 1
   end
 
   it "should fix a second-level counter cache correctly" do
@@ -1062,6 +1159,27 @@ describe "CounterCulture" do
 
     string_id.reload
     string_id.users_count.should == 2
+  end
+
+  it "should fix a static delta magnitude column correctly" do
+    user = User.create
+    product = Product.create
+
+    Review.create(
+      :user_id => user.id,
+      :review_type => 'using',
+      :product_id => product.id
+    )
+
+    user.reload
+    user.custom_delta_count.should == 3
+
+    user.update_attributes(:custom_delta_count => 5)
+
+    Review.counter_culture_fix_counts(:skip_unsupported => true)
+
+    user.reload
+    user.custom_delta_count.should == 3
   end
 
   it "should work correctly for relationships with custom names" do
@@ -1334,7 +1452,7 @@ describe "CounterCulture" do
     categ.reload.posts_count.should == 1
   end
 
-  describe "#previous_model" do
+  pending "#previous_model" do
     let(:user){User.create :name => "John Smith", :manages_company_id => 1}
 
     it "should return a copy of the original model" do
