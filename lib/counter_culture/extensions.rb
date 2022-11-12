@@ -111,8 +111,8 @@ module CounterCulture
           counter_cache_name_was = counter.counter_cache_name_for(counter.previous_model(self))
           counter_cache_name = counter.counter_cache_name_for(self)
 
-          if send("#{counter.first_level_relation_foreign_key}_changed?") ||
-            (counter.delta_column && send("#{counter.delta_column}_changed?")) ||
+          if saved_change_to_attribute?(counter.first_level_relation_foreign_key.to_sym)||
+            (counter.delta_column && saved_change_to_attribute?(counter.delta_column.to_sym)) ||
             counter_cache_name != counter_cache_name_was
 
             # increment the counter cache of the new value

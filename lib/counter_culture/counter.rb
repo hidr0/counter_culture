@@ -177,7 +177,7 @@ module CounterCulture
     def previous_model(obj)
       prev = obj.dup
 
-      obj.changed_attributes.each do |key, value|
+      obj.saved_changes.transform_values(&:first).each do |key, value|
         # []= is a public write_attribute alias
         prev[key] = value
       end
