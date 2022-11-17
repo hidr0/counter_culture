@@ -108,7 +108,8 @@ module CounterCulture
       first_relation = relation.first
       if was
         first = relation.shift
-        foreign_key_value = obj.send("#{relation_foreign_key(first)}_was")
+#         foreign_key_value = obj.send("#{relation_foreign_key(first)}_was")
+        foreign_key_value = obj.send("#{relation_foreign_key(first)}_before_last_save")
         klass = relation_klass(first)
         value = klass.where("#{klass.table_name}.#{relation_primary_key(first)} = ?", foreign_key_value).first if foreign_key_value
       else
